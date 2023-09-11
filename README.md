@@ -1,2 +1,2 @@
 # Zebrafish_scATAC
-Scripts and analyses for scATAC data of zebrafish embryogenesis.
+Scripts and analysis for zebrafish embryo scATAC data.
