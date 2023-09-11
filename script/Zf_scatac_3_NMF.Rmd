@@ -1,0 +1,177 @@
+---
+title: "Zf_scatac_3_NMF"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Factorization matrix
+
+We factorize peak-cell matrix of merged object and identify peak modules used non-nagative matrix foctorization (NMF) algorithm from Python scikit-learn toolkit.
+
+## Library package
+
+```{python}
+from __future__ import print_function
+from sklearn import datasets
+from time import time , sleep
+from tqdm import tqdm
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import NMF
+import scanpy as sc
+import scipy.sparse as sp
+import scipy.spatial.distance
+import scipy
+from scipy.cluster.hierarchy import linkage, dendrogram , cophenet
+import gc
+from multiprocessing import Pool
+```
+
+## Perform NMF
+
+```{python}
+adata = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/RDS/atac_merge.h5ad")
+x = adata.X.todense()
+model = NMF(n_components = 25 , init="nndsvdar" , random_state=0 , max_iter=5000)
+W = model.fit_transform(x)
+H = model.components_
+```
+
+## Save matrices
+
+```{python}
+np.savetxt("/home/zhangyl/zbf_scATAC_v3/RDS/W_atac_merge.txt" , W , delimiter=",")
+np.savetxt("/home/zhangyl/zbf_scATAC_v3/RDS/H_atac_merge.txt" , H , delimiter=",")
+```
+
+# Create seurat redution object in R
+
+This step was run in R.
+
+## Library package
+
+```{r}
+library(Signac)
+library(Seurat)
+library(GenomicRanges)
+library(future)
+library(ggplot2)
+library(patchwork)
+library(hdf5r)
+library(dplyr)
+library(readr)
+library(pheatmap)
+library(ggrepel)
+library(LSD)
+library(MASS)
+library(future)
+library(data.table)
+library(pROC)
+library(SeuratDisk)
+```
+
+## Read matrix
+
+```{r}
+W_merge <- fread(file = "~/zbf_scATAC_v3/RDS/W_atac_merge.txt" ,header = F)
+H_merge <- fread(file = "~/zbf_scATAC_v3/RDS/H_atac_merge.txt" ,header = F)
+
+W_merge <- as.data.frame(W_merge)
+rownames(W_merge) <- rownames(atac_merge@meta.data)
+colnames(W_merge) <- paste("merge_module", c(1:25) , sep = '')
+
+H_merge <- as.data.frame(t(H_merge))
+rownames(H_merge) <- rownames(atac_merge@assays$peaks)
+colnames(H_merge) <- paste("merge_module", c(1:25) , sep = '')
+```
+
+## Create DimReduc object
+
+```{r}
+atac_merge_nmf_reduction <- CreateDimReducObject(embeddings = as.matrix(W_merge) , 
+                                                 loadings = as.matrix(H_merge) , 
+                                                 assay = "peaks" , 
+                                                 key = "NMF_" , 
+                                                 global = T)
+```
+
+## Save object
+
+```{r}
+atac_merge <- readRDS(file = "~/zbf_scATAC_n/atac_merge.RDS")
+atac_merge@reductions$NMF <- atac_merge_nmf_reduction
+```
+
+## Visualization
+
+```{r}
+DimPlot(atac_merge , label = T , group.by = "batch")
+FeaturePlot(atac_merge , label = T , features = "NMF_2")
+FeaturePlot(atac_merge , label = T , features = "NMF_3")
+FeaturePlot(atac_merge , label = T , features = "NMF_4")
+FeaturePlot(atac_merge , label = T , features = "NMF_6")
+FeaturePlot(atac_merge , label = T , features = "NMF_10")
+
+VlnPlot(atac_merge , features = c("NMF_1" , "NMF_2" , "NMF_3" , "NMF_4" , "NMF_5" , 
+                                  "NMF_6" , "NMF_7" , "NMF_8" , "NMF_9" , "NMF_10" , 
+                                  "NMF_11" , "NMF_12" , "NMF_13" , "NMF_14" , "NMF_15" , 
+                                  "NMF_16" , "NMF_17" , "NMF_18" , "NMF_19" , "NMF_20" , 
+                                  "NMF_21" , "NMF_22" , "NMF_23" , "NMF_24" , "NMF_25") , ncol = 5 ,
+        group.by = "batch")
+
+VlnPlot(atac_merge , features = c("NMF_1" , "NMF_2" , "NMF_3" , "NMF_4" , "NMF_5" , 
+                                  "NMF_6" , "NMF_7" , "NMF_8" , "NMF_9" , "NMF_10" , 
+                                  "NMF_11" , "NMF_12" , "NMF_13" , "NMF_14" , "NMF_15" , 
+                                  "NMF_16" , "NMF_17" , "NMF_18" , "NMF_19" , "NMF_20" , 
+                                  "NMF_21" , "NMF_22" , "NMF_23" , "NMF_24" , "NMF_25") , ncol = 5 ,
+        group.by = "stage")
+```
+
+## Choose peaks with higher weights
+
+```{r}
+top_peaks_module2 <- head(rownames(H_merge)[order(H_merge$module2 , decreasing = T)] , n = 2000)
+top_peaks_module3 <- head(rownames(H_merge)[order(H_merge$module3 , decreasing = T)] , n = 2000)
+top_peaks_module4 <- head(rownames(H_merge)[order(H_merge$module4 , decreasing = T)] , n = 2000)
+top_peaks_module6 <- head(rownames(H_merge)[order(H_merge$module6 , decreasing = T)] , n = 2000)
+top_peaks_module10 <- head(rownames(H_merge)[order(H_merge$module10 , decreasing = T)] , n = 2000)
+
+write.table(as.data.frame(top_peaks_module2) , file = "zbf_scATAC_v3/to_do/increase_module_2.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module3) , file = "zbf_scATAC_v3/to_do/increase_module_3.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module4) , file = "zbf_scATAC_v3/to_do/increase_module_4.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module6) , file = "zbf_scATAC_v3/to_do/increase_module_6.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module10) , file = "zbf_scATAC_v3/to_do/increase_module_10.bed" , quote = F , sep = "\t" , row.names = F)
+```
+
+## Choose random peaks from background
+
+```{r}
+set.seed(2022)
+random_peaks <- sample(x = rownames(atac_merge@assays$peaks@data) , size = 2000 , replace = F)
+write.table(as.data.frame(random_peaks) , file = "zbf_scATAC_v3/to_do/random_2000_peaks.bed" , quote = F , sep = "\t" , row.names = F)
+```
+
+## Annotation
+
+```{r}
+#### anno_module2
+peakanno_module2 <- annoPeaks(peaks = StringToGRanges(top_peaks_module2) , annoData = annotation.zbf , select = "bestOne" , 
+                              bindingType = c("fullRange"))
+
+top_peaks_module2_peak <- as.data.frame(cbind(top_peaks_module2 , paste("X" , c(1:length(top_peaks_module2)) , sep = "")))
+colnames(top_peaks_module2_peak) <- c("peaks" , "peak")
+ad <- as.data.frame(peakanno_module2@elementMetadata)[,c(1,11,13,14)]
+top_peaks_module2_anno <- merge(x = top_peaks_module2_peak , y = ad , by = "peak" , all.x = T , all.y = F , sort = T)
+top_peaks_module2_anno <- top_peaks_module2_anno[,c(7,2:6,8:10)]
+top_peaks_module2_anno$rank <- as.numeric(substr(top_peaks_module2_anno$peak , start = 2 , stop = 6))
+
+top_peaks_module2_anno <- (top_peaks_module2_anno[order(top_peaks_module2_anno$rank),])
+peakanno_module2 <- StringToGRanges(top_peaks_module2_anno$peaks)
+peakanno_module2@elementMetadata <- DataFrame(top_peaks_module2_anno[,c(3:5)])
+
+write.table(peakanno_module2 , file = "~/zbf_scATAC_v3/to_do/todo2_decrease_module_2_annotation.bed" , quote = F , sep = "\t" , row.names = F)
+```

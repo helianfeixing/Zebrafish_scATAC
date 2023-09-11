@@ -1,0 +1,207 @@
+---
+title: "Zf_scatac_6_TrajectoryAnalysis"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Perform trajectory analysis using diffusion pseudotime (DPT)
+
+This step run in Python.
+
+## Library package
+
+```{python}
+from __future__ import print_function
+from sklearn import datasets
+from time import time , sleep
+from tqdm import tqdm
+import numpy as np
+import pandas as pd
+import scanpy as sc
+import scipy.sparse as sp
+import scipy.spatial.distance
+import scipy
+from scipy.cluster.hierarchy import linkage, dendrogram , cophenet
+import gc
+from multiprocessing import Pool
+```
+
+## Load h5ad
+
+```{python}
+atac_spdome = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/atac_spdome_new.h5ad")
+```
+
+## Run diffmap
+
+```{python}
+sc.pp.neighbors(atac_spdome, n_neighbors=13, n_pcs=12, use_rep='X_integrated_lsi', method='gauss')
+sc.tl.diffmap(atac_spdome)
+```
+
+## Choose root and conculate pseudotime value
+
+```{python}
+Tn_mask = np.isin(atac_spdome.obs['type'], ['Epi1'])
+min_stem_id = np.argmin(atac_spdome.obsm['X_diffmap'][Tn_mask, 1])
+root_id = np.arange(len(Tn_mask))[Tn_mask][min_stem_id]
+atac_spdome.uns['iroot'] = root_id
+sc.tl.dpt(atac_spdome)
+```
+
+## Visualization 2D
+
+```{python}
+atac_spdome.obsm['X_diffmap_'] = atac_spdome.obsm['X_diffmap'][:,1:]
+sc.pl.embedding(atac_spdome,'diffmap_',color=['dpt_pseudotime','type' , 'batch'])
+```
+
+## Visualization 3D and save plot
+
+```{python}
+sc.pl.embedding(atac_spdome,'diffmap_',color=['dpt_pseudotime','type', 'batch'] , dimensions=(0,1,2) ,
+                projection = '3d' , save='diffmap_3D.pdf')
+```
+
+## Save the cell embedding of trajectory and pseudotime value
+
+```{python}
+np.savetxt("/home/zhangyl/zbf_scATAC_v3/diffmap_spdome_2.txt" , atac_spdome.obsm['X_diffmap_'] , 
+           delimiter = '\t' , comments="")
+
+np.savetxt("/home/zhangyl/zbf_scATAC_v3/dpt_pseudometime_spdome_2.txt" , atac_spdome.obs.dpt_pseudotime , 
+           delimiter = '\t' , comments="")
+```
+
+# Fit smoothed accessibility curves for peaks of cells through pseudotime
+
+This step run in R.
+
+## Library package
+
+```{r}
+library(mgcv)
+library(VGAM)
+library(ggplot2)
+library(pheatmap)
+library(RColorBrewer)
+```
+
+## Find differentail accessible peaks
+
+```{r}
+markers_spdome_DEL1_new <- FindMarkers(object = atac_spdome_new,
+                                       ident.1 = "DEL1",
+                                       min.pct = 0.05,
+                                       test.use = 'LR',
+                                       latent.vars = 'uniq_nuc_frags')
+markers_spdome_DEL2_new <- FindMarkers(object = atac_spdome_new,
+                                       ident.1 = "DEL2",
+                                       min.pct = 0.05,
+                                       test.use = 'LR',
+                                       latent.vars = 'uniq_nuc_frags')
+markers_spdome_evl_new <- FindMarkers(object = atac_spdome_new,
+                                       ident.1 = "EVL",
+                                       min.pct = 0.05,
+                                       test.use = 'LR',
+                                      latent.vars = 'uniq_nuc_frags')
+markers_spdome_ysl_new <- FindMarkers(object = atac_spdome_new,
+                                      ident.1 = "E-YSL",
+                                      min.pct = 0.05,
+                                      test.use = 'LR',
+                                      latent.vars = 'uniq_nuc_frags')
+
+markers_spdome_evl_new$peaks <- rownames(markers_spdome_evl_new)
+markers_spdome_ysl_new$peaks <- rownames(markers_spdome_ysl_new)
+markers_spdome_epi2_new$peaks <- rownames(markers_spdome_epi2_new)
+markers_spdome_epi1_new$peaks <- rownames(markers_spdome_epi1_new)
+```
+
+## Add pseudotime value to meta.data
+
+```{r}
+dpt_pseudotime <- read.table(file = "/home/zhangyl/zbf_scATAC_v3/dpt_pseudometime_spdome_2.txt" , quote = F , sep = "\t")
+atac_spdome_new$dpt_pseudotime <- dpt_pseudotime$V1
+```
+
+## Choose cells in each trajectory
+
+```{r}
+cells = colnames(atac_spdome_new_new@assays[[assay]]@data)
+cells_traj_evl <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
+                    rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "EVL"])
+cells_traj_ysl <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
+                    rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "E-YSL"])
+cells_traj_epi <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
+                    rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "Epi2"])
+```
+
+## Choose top 1000 differential accessibility peaks of each type to fit
+
+```{r}
+features_evl <- head(markers_spdome_evl_new$peaks , n = 1000)
+features_ysl <- head(markers_spdome_ysl_new$peaks , n = 1000)
+features_epi <- head(markers_spdome_epi2_new$peaks , n = 1000)
+
+features <- data.frame("peaks" = c(features_evl , features_ysl , features_epi) , "type" = rep(c("EVL" , "YSL" , "DEL2") , each = 1000))
+features <- features[duplicated(features$peaks) == 0,]
+```
+
+## Scale matrix
+
+```{r}
+atac_spdome_new <- ScaleData(atac_spdome_new , assay = "peaks" , features = features$peaks)
+```
+
+## Create a function to fit a vector generalized additive model (VGAM) for each trajectory through pseudotime
+
+df : degrees of freedom.See VGAM.
+
+```{r}
+h <- function(object , cells = colnames(object@assays[[assay]]@data) , 
+              features = rownames(object@assays[[assay]]@data) , assay = DefaultAssay(integrated_spdome) , df = 3)
+{
+  d <- object@assays[[assay]]@scale.data
+  d <- as.data.frame(t(d[features,cells]))
+  d <- cbind(d , pseudotime = object$dpt_pseudotime[cells] , stage = object$type[cells])
+  ss <- seq(0,1,by = 0.01)
+  dd <- data.frame(test = ss)
+  for(i in features){
+    fit <- vgam(data = d , d[,i] ~ sm.ns(pseudotime , df = df) , family = uninormal() , model = T)
+    dd <- cbind(dd, predict(fit , data.frame(pseudotime = ss))[,1])
+  }
+  dd <- dd[,-1]
+  dd <- as.data.frame(t(dd))
+  rownames(dd) <- features
+  colnames(dd) <- ss
+  return(dd)
+}
+```
+
+## Fit generalized additive model and create matrix
+
+```{r}
+dd_evl <- h(object = atac_spdome_new , cells = cells_traj_evl , features = features$peaks , assay = "peaks")
+dd_ysl <- h(object = atac_spdome_new , cells = cells_traj_ysl , features = features$peaks , assay = "peaks")
+dd_epi <- h(object = atac_spdome_new , cells = cells_traj_epi , features = features$peaks , assay = "peaks")
+dd <- cbind(dd_evl , dd_ysl , dd_epi)
+dd[dd > 6] = 6
+```
+
+## Draw heatmap
+
+```{r}
+anno_row <- data.frame("type" = features$type , row.names = features$peaks)
+anno_colors <- list(type = c(EVL = "#e58932" , YSL = "#80598f" , DEL2 = "#c0b286"))
+
+dp <- pheatmap(dd , color = colorRampPalette(rev(brewer.pal(n = 7, name = "Spectral")))(100) ,
+               cluster_cols = F , cluster_rows = T , border_color = F , show_colnames = F,
+               annotation_row = anno_row, annotation_colors = anno_colors,
+               scale = "none" , show_rownames = F , cutree_rows = 4, gaps_col = c(101,202))
+
+dp <- as.ggplot(dp)
+```

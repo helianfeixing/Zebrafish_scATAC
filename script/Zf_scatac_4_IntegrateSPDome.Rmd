@@ -1,0 +1,126 @@
+---
+title: "Zf_scatac_4_IntergrateSPDome"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Integrate sphere-dome and dome
+```{r}
+atac_spdome <- subset(atac_merge , stage %in% c("sphere_dome" , "dome"))
+atac_spdome_list <- SplitObject(object = atac_spdome , split.by = "batch")
+
+atac_spdome <- FindTopFeatures(atac_spdome)
+atac_spdome <- RunTFIDF(atac_spdome)
+atac_spdome <- RunSVD(object = atac_spdome)
+atac_spdome <- RunUMAP(object = atac_spdome, reduction = 'lsi', dims = 2:30)
+DimPlot(atac_spdome , group.by = "batch")
+
+integration.anchors_spdome <- FindIntegrationAnchors(
+  object.list = atac_spdome_list,
+  anchor.features = rownames(atac_spdome),
+  reduction = "rlsi",
+  dims = 2:30
+)
+gc()
+integrated_spdome <- IntegrateEmbeddings(
+  anchorset = integration.anchors_spdome,
+  reductions = atac_spdome[["lsi"]],
+  new.reduction.name = "integrated_lsi",
+  dims.to.integrate = 1:30
+)
+gc()
+integrated_spdome <- RunUMAP(integrated_spdome, reduction = "integrated_lsi", dims = 2:30)
+integrated_spdome <- FindNeighbors(object = integrated_spdome, reduction = 'integrated_lsi', dims = 2:30)
+integrated_spdome <- FindClusters(object = integrated_spdome, verbose = FALSE, algorithm = 3)
+DimPlot(integrated_spdome , label = T)
+```
+
+
+## Label cell types
+```{r}
+integrated_spdome$type <- "DEL1"
+integrated_spdome$type[integrated_spdome$seurat_clusters == "6"] <- "EVL"
+integrated_spdome$type[integrated_spdome$seurat_clusters == "8"] <- "DEL2"
+integrated_spdome$type[integrated_spdome$seurat_clusters == "10"] <- "YSL"
+DimPlot(integrated_spdome , group.by = "type" , label = T)
+Idents(integrated_spdome) <- factor(integrated_spdome$type , levels = c("DEL1" , "DEL2" , "EVL" , "E-YSL"))
+```
+
+## Find differentail accessible peaks
+```{r}
+markers_spdome_DEL1 <- FindMarkers(object = integrated_spdome,
+                                   ident.1 = "DEL1",
+                                   min.pct = 0.05,
+                                   test.use = 'LR',
+                                   latent.vars = 'uniq_nuc_frags')
+markers_spdome_DEL2 <- FindMarkers(object = integrated_spdome,
+                                   ident.1 = "DEL2",
+                                   min.pct = 0.05,
+                                   test.use = 'LR',
+                                   latent.vars = 'uniq_nuc_frags')
+markers_spdome_evl <- FindMarkers(object = integrated_spdome,
+                                   ident.1 = "EVL",
+                                   min.pct = 0.05,
+                                   test.use = 'LR',
+                                  latent.vars = 'uniq_nuc_frags')
+markers_spdome_ysl <- FindMarkers(object = integrated_spdome,
+                                   ident.1 = "E-YSL",
+                                   min.pct = 0.05,
+                                   test.use = 'LR',
+                                   latent.vars = 'uniq_nuc_frags')
+```
+
+## Annotation marker peaks
+```{r}
+### anno_evl
+peakanno_evl <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_evl)) , annoData = annotation.zbf , select = "bestOne" , 
+                          bindingType = c("fullRange"))
+
+markers_spdome_evl$peak <- paste("X" , c(1:nrow(markers_spdome_evl)) , sep = "")
+markers_spdome_evl$peaks <- rownames(markers_spdome_evl)
+
+ad <- as.data.frame(peakanno_evl@elementMetadata)[,c(1,11,13,14)]
+markers_spdome_evl_anno <- merge(x = markers_spdome_evl , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
+markers_spdome_evl_anno <- markers_spdome_evl_anno[,c(7,2:6,8:10)]
+write.table(markers_spdome_evl_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_evl.csv")
+
+#### anno_DEL1
+peakanno_DEL1 <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_DEL1)) , annoData = annotation.zbf , select = "bestOne" , 
+                          bindingType = c("fullRange"))
+
+markers_spdome_DEL1$peak <- paste("X" , c(1:nrow(markers_spdome_DEL1)) , sep = "")
+markers_spdome_DEL1$peaks <- rownames(markers_spdome_DEL1)
+
+ad <- as.data.frame(peakanno_DEL1@annotationelementMetadata)[,c(1,11,13,14)]
+markers_spdome_DEL1_anno <- merge(x = markers_spdome_DEL1 , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
+markers_spdome_DEL1_anno <- markers_spdome_DEL1_anno[,c(7,2:6,8:10)]
+write.table(markers_spdome_DEL1_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_DEL1.csv")
+
+#### anno_DEL2
+peakanno_DEL2 <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_DEL2)) , annoData = annotation.zbf , select = "bestOne" , 
+                           bindingType = c("fullRange"))
+
+markers_spdome_DEL2$peak <- paste("X" , c(1:nrow(markers_spdome_DEL2)) , sep = "")
+markers_spdome_DEL2$peaks <- rownames(markers_spdome_DEL2)
+
+ad <- as.data.frame(peakanno_DEL2@elementMetadata)[,c(1,11,13,14)]
+markers_spdome_DEL2_anno <- merge(x = markers_spdome_DEL2 , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
+markers_spdome_DEL2_anno <- markers_spdome_DEL2_anno[,c(7,2:6,8:10)]
+write.table(markers_spdome_DEL2_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_DEL2.csv")
+
+#### anno_ysl
+peakanno_ysl <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_ysl)) , annoData = annotation.zbf , select = "bestOne" , 
+                           bindingType = c("fullRange"))
+
+markers_spdome_ysl$peak <- paste("X" , c(1:nrow(markers_spdome_ysl)) , sep = "")
+markers_spdome_ysl$peaks <- rownames(markers_spdome_ysl)
+
+ad <- as.data.frame(peakanno_ysl@elementMetadata)[,c(1,11,13,14)]
+markers_spdome_ysl_anno <- merge(x = markers_spdome_ysl , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
+markers_spdome_ysl_anno <- markers_spdome_ysl_anno[,c(7,2:6,8:10)]
+write.table(markers_spdome_ysl_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_ysl.csv")
+```

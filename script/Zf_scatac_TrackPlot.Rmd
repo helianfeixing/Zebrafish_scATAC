@@ -1,0 +1,97 @@
+---
+title: "Zf_scatac_TrackPlot"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Library package
+
+```{r}
+library(Signac)
+library(Seurat)
+library(GenomeInfoDb)
+library(EnsDb.Hsapiens.v75)
+library(ggplot2)
+library(patchwork)
+```
+
+## PeakPlot function
+
+```{r}
+MyPeakPlot <- function (peaks, region, assay = NULL, color = "dimgrey", sep = c("-", "-") , group.by = NULL , label.name = "Peaks") 
+{
+  if (!inherits(x = region, what = "GRanges")) {
+    region <- StringToGRanges(regions = region)
+  }
+  peak.intersect <- subsetByOverlaps(x = peaks, ranges = region)
+  peak.df <- as.data.frame(x = peak.intersect)
+  start.pos <- start(x = region)
+  end.pos <- end(x = region)
+  chromosome <- seqnames(x = region)
+  if (nrow(x = peak.df) > 0) {
+    if (!is.null(x = group.by)) {
+      if (!(group.by %in% colnames(x = peak.df))) {
+        warning("Requested grouping variable not found")
+        group.by <- NULL
+      }
+    }
+    peak.df$start[peak.df$start < start.pos] <- start.pos
+    peak.df$end[peak.df$end > end.pos] <- end.pos
+    peak.plot <- ggplot(data = peak.df, aes_string()) + 
+      geom_segment(aes(x = start, y = 0, xend = end, yend = 0), size = 2, data = peak.df , col = color)
+  }
+  else {
+    peak.plot <- ggplot(data = peak.df)
+  }
+  peak.plot <- peak.plot + theme_classic() + ylab(label = label.name) + 
+    theme(axis.ticks.y = element_blank(), axis.text.y = element_blank()) + 
+    xlab(label = paste0(chromosome, " position (bp)")) + 
+    xlim(c(start.pos, end.pos))
+  if (is.null(x = group.by)) {
+    peak.plot <- peak.plot + scale_color_manual(values = "dimgrey") + 
+      theme(legend.position = "none")
+  }
+  return(peak.plot)
+}
+```
+
+## Plot tracks
+
+```{r}
+peaks <- "krt4"
+
+c1 <- CoveragePlot(integrated_spdome_new , region = peaks , extend.upstream = 25000 , extend.downstream = 25000, links = F , group.by = "type" , annotation = F , peaks = F) +
+  scale_fill_manual(values = col.type)
+
+c2 <- AnnotationPlot(integrated_spdome_new , region = GRangesToString(c1$plot_env$region) , extend.upstream = 0 , extend.downstream = 0)
+
+c3 <- PeakPlot(integrated_spdome_new , region = GRangesToString(c2$plot_env$region), extend.upstream = 0 , extend.downstream = 0)
+
+c4 <- MyPeakPlot(peaks = promoter , region = GRangesToString(c2$plot_env$region) , color = "#cd3333" , label.name = "Promotor")
+
+c5 <- LinkPlot(object = integrated_spdome_new , region = GRangesToString(c2$plot_env$region) , min.cutoff = 0.7)
+
+bw_1 <- BigwigTrack(c2$plot_env$region , bigwig = '~/bw/dome_H3K27ac_treat_pileup.bw' , downsample.rate = 0 , y_label = "H3K27ac_xw")
+
+bw_2 <- BigwigTrack(c2$plot_env$region , bigwig = '~/bw/dome_H3K4me3_treat_pileup.bw' , downsample.rate = 0 , y_label = "H3K4me3_xw")
+
+bw_3 <- BigwigTrack(c2$plot_env$region , bigwig = '~/bw/gse32483_dome_H3K27ac.bw' , downsample.rate = 0 , y_label = "H3K27ac")
+
+bw_4 <- BigwigTrack(c2$plot_env$region , bigwig = '~/bw/gse32483_dome_H3K4me1.bw' , downsample.rate = 0 , y_label = "H3K4me1")
+
+bw_5 <- BigwigTrack(c2$plot_env$region , bigwig = '~/bw/gse32483_dome_H3K4me3.bw' , downsample.rate = 0 , y_label = "H3K4me3")
+
+c <- CombineTracks(
+  plotlist = list(c1, bw_1 , bw_2 , bw_3 , bw_4 , bw_5),
+  heights = c(6,1,1,1,1,1)
+)
+
+CombineTracks(
+  plotlist = list(c ,c2, c3 , c5),
+  heights = c(18, 1 , 1 , 1)
+)
+```

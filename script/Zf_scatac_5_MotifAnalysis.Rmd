@@ -1,0 +1,97 @@
+---
+title: "Zf_scatac_5_MotifAnalysis"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Library package
+```{r}
+library(Signac)
+library(Seurat)
+library(JASPAR2020)
+library(TFBSTools)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(patchwork)
+```
+
+## Re-call peak for DEL1,DEL2,EVL and YSL
+Use MAC2.
+
+## Create new matrix and object for sphere_dome and dome.
+```{r}
+epi1_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/epi1_peaks_formatted.bed")
+epi2_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/epi2_peaks_formatted.bed")
+evl_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/evl_peaks_formatted.bed")
+ysl_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/ysl_peaks_formatted.bed")
+
+epi1_new_peaks <- StringToGRanges(epi1_new_peaks$V4)
+epi2_new_peaks <- StringToGRanges(epi2_new_peaks$V4)
+evl_new_peaks <- StringToGRanges(evl_new_peaks$V4)
+ysl_new_peaks <- StringToGRanges(ysl_new_peaks$V4)
+
+bl.peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/aggregated_scATAC_peaks_formatted.bed")
+
+bl.peaks <- StringToGRanges(bl.peaks$V4)
+
+gr.epi1_qc <- epi1_new_peaks[is.na(findOverlaps(epi1_new_peaks, bl.peaks, select="arbitrary"))]
+gr.epi2_qc <- epi2_new_peaks[is.na(findOverlaps(epi2_new_peaks, bl.peaks, select="arbitrary"))]
+gr.evl_qc <- evl_new_peaks[is.na(findOverlaps(evl_new_peaks, bl.peaks, select="arbitrary"))]
+gr.ysl_qc <- ysl_new_peaks[is.na(findOverlaps(ysl_new_peaks, bl.peaks, select="arbitrary"))]
+
+combine.peaks <- reduce(x = c(gr.epi1_qc , gr.epi2_qc , gr.evl_qc , gr.ysl_qc))
+
+frag.spdome <- Fragments(integrated_spdome)
+
+spdome.counts <- FeatureMatrix(
+  fragments = frag.spdome , 
+  features = combine.peaks , 
+  cells = rownames(integrated_spdome@meta.data)
+)
+
+atac_spdome_new <- CreateChromatinAssay(spdome.counts , fragments = frag.spdome) %>% CreateSeuratObject(assay = "peaks" , meta.data = integrated_spdome@meta.data)
+```
+
+# Perform motif analysis using ChromVAR
+## Convert start position 0 to 1
+```{r}
+start(atac_spdome_new@assays$peaks@ranges[which(start(atac_spdome_new@assays$peaks@ranges) == 0),]) = 1
+```
+
+## Get the list of motif position frequency matrices from the JASPAR database
+```{r}
+pfm <- getMatrixSet(
+  x = JASPAR2020,
+  opts = list(collection = "CORE", tax_group = 'vertebrates', all_versions = FALSE)
+)
+```
+
+## Add motif information
+```{r}
+atac_spdome_new <- AddMotifs(
+  object = atac_spdome_new,
+  genome = BSgenome.Drerio.UCSC.danRer11,
+  pfm = pfm
+)
+```
+
+## Run chromVAR
+```{r}
+atac_spdome_new <- RunChromVAR(
+  object = atac_spdome_new,
+  genome = BSgenome.Drerio.UCSC.danRer11
+)
+```
+
+## Show the activity of Klf1
+```{r}
+FeaturePlot(atac_spdome_new , features = "MA0493.1" , min.cutoff = "q05" , max.cutoff = "q95")
+```
+
+## Convert Seurat object to h5ad
+```{r}
+SaveH5Seurat(atac_spdome_new , filename = "atac_spdome_new.h5Seurat")
+Convert("atac_spdome_new.h5Seurat" , dest = "h5ad")
+```

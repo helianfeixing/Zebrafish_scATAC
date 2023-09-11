@@ -1,0 +1,44 @@
+---
+titl: "Zf_scatac_7_CoAccessibility"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Library package
+```{r}
+library(Signac)
+library(Seurat)
+library(SeuratWrappers)
+library(ggplot2)
+library(patchwork)
+library(cicero)
+```
+
+## Get the chromosome sizes from the Seurat object
+```{r}
+genome <- seqlengths(BSgenome.Drerio.UCSC.danRer11)[1:26]
+```
+
+## Convert chromosome sizes to a dataframe
+```{r}
+genome.df <- data.frame("chr" = names(genome), "length" = genome)
+```
+
+## Run cicero
+```{r}
+conns <- run_cicero(atac_spdome_new, genomic_coords = genome.df, sample_num = 100)
+```
+
+## Choose the peak pairs whose co-access value > 0.1
+```{r}
+conns <- conns[conns$coaccess > 0.1,]
+ccans <- generate_ccans(conns)
+
+links <- ConnectionsToLinks(conns = conns, ccans = ccans)
+
+Links(atac_spdome_new) <- links
+```

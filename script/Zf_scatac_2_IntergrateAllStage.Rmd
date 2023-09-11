@@ -1,0 +1,198 @@
+---
+title: "Zf_scatac_2_IntergrateAllStage"
+author: "zhangyl"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+
+```{r}
+library(Signac)
+library(Seurat)
+library(GenomicRanges)
+library(future)
+library(ggplot2)
+library(patchwork)
+library(hdf5r)
+library(dplyr)
+library(readr)
+library(pheatmap)
+library(ggrepel)
+library(LSD)
+library(MASS)
+library(future)
+library(data.table)
+library(pROC)
+library(SeuratDisk)
+```
+
+## Create a common set of peaks
+
+```{r}
+gr.1k <- granges(atac_1k)
+gr.high <- granges(atac_high)
+gr.oblong <- granges(atac_oblong)
+gr.sphere <- granges(atac_sphere)
+gr.dome <- granges(atac_dome)
+```
+
+## Remove peaks intersected with blacklist
+
+The blacklist was generated from a prior dataset of ATAC-seq data obtained from zebrafish nucleosome-free genomics DNA.
+
+```{r}
+gr.1k_qc <- gr.1k[is.na(findOverlaps(gr.1k, bl.peaks, select="arbitrary"))]
+gr.high_qc <- gr.high[is.na(findOverlaps(gr.high, bl.peaks, select="arbitrary"))]
+gr.oblong_qc <- gr.oblong[is.na(findOverlaps(gr.oblong, bl.peaks, select="arbitrary"))]
+gr.sphere_qc <- gr.sphere[is.na(findOverlaps(gr.sphere, bl.peaks, select="arbitrary"))]
+gr.dome_qc <- gr.dome[is.na(findOverlaps(gr.dome, bl.peaks, select="arbitrary"))]
+
+combine.peaks <- reduce(x = c(gr.1k_qc , gr.high_qc , gr.oblong_qc, gr.sphere_qc, gr.dome_qc))
+peakwidths <-width(combine.peaks)
+
+range(peakwidths)
+```
+
+## Create fragment objects
+
+```{r}
+frags.1k <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/1k/aggregate_fragments.tsv.gz" , 
+                                 cells = rownames(atac_1k@meta.data))
+frags.high <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/high/aggregate_fragments.tsv.gz" , 
+                                   cells = rownames(atac_high@meta.data))
+frags.oblong <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/oblong/aggregate_fragments.tsv.gz" , 
+                                     cells = rownames(atac_oblong@meta.data))
+frags.sphere <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/sphere/aggregate_fragments.tsv.gz" , 
+                                     cells = rownames(atac_sphere@meta.data))
+frags.dome <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/dome/aggregate_fragments.tsv.gz" , 
+                                   cells = rownames(atac_dome@meta.data))
+```
+
+## Create meta.data
+
+```{r}
+md.1k <- atac_1k@meta.data
+md.high <- atac_high@meta.data
+md.oblong <- atac_oblong@meta.data
+md.sphere <- atac_sphere@meta.data
+md.dome <- atac_dome@meta.data
+```
+
+## Create Seurat objects of each stage
+
+```{r}
+atac1k.counts <- FeatureMatrix(
+  fragments = frags.1k , 
+  features = combine.peaks , 
+  cells = rownames(md.1k)
+)
+atac_high.counts <- FeatureMatrix(
+  fragments = frags.high , 
+  features = combine.peaks , 
+  cells = rownames(md.high)
+)
+atac_oblong.counts <- FeatureMatrix(
+  fragments = frags.oblong , 
+  features = combine.peaks , 
+  cells = rownames(md.oblong)
+)
+atac_sphere.counts <- FeatureMatrix(
+  fragments = frags.sphere , 
+  features = combine.peaks , 
+  cells = rownames(md.sphere)
+)
+atac_dome.counts <- FeatureMatrix(
+  fragments = frags.dome , 
+  features = combine.peaks , 
+  cells = rownames(md.dome)
+)
+
+atac_1k <- CreateChromatinAssay(atac1k.counts , fragments = frags.1k) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.1k)
+atac_high <- CreateChromatinAssay(atac_high.counts , fragments = frags.high) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.high)
+atac_oblong <- CreateChromatinAssay(atac_oblong.counts , fragments = frags.oblong) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.oblong)
+atac_sphere <- CreateChromatinAssay(atac_sphere.counts , fragments = frags.sphere) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.sphere)
+atac_dome <- CreateChromatinAssay(atac_dome.counts , fragments = frags.dome) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.dome)
+```
+
+## Merge objects
+
+```{r}
+atac_merge <- merge(x = atac_1k , y = list(atac_high , atac_oblong , atac_sphere , atac_dome))
+Annotation(atac_merge) <- annotation.zbf
+Idents(atac_merge) <- factor(atac_merge$batch)
+```
+
+## Save object
+
+```{r}
+saveRDS(object = atac_merge , file = "~/zbf_scATAC_n/atac_merge.RDS")
+```
+
+## Convert object to h5ad
+
+```{r}
+SaveH5Seurat(atac_merge , filename = "atac_merge.h5Seurat")
+Convert("atac_merge.h5Seurat" , dest = "h5ad")
+```
+
+## Integration
+
+We integrated data based on BBKNN. This step was run in Python.
+
+```{python}
+## Library package
+%matplotlib inline
+%config InlineBackend.figure_format = 'retina'
+import gzip
+import numpy as np
+import pandas as pd
+import seaborn as snsNote that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+import matplotlib as mpl
+import bbknn as bbknn
+from collections import Counter
+import matplotlib.pyplot as plt
+import scanpy as sc
+sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
+sc.logging.print_header()
+sc.settings.set_figure_params(dpi=80)
+```
+
+## Load data
+
+```{python}
+adata = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/RDS/atac_merge.h5ad")
+```
+
+## Add ref/query label
+
+```{python}
+adata.obs['experimental_label'] = \
+    adata.obs.batch.replace({0 : '1k_rep1', 2 : 'high', 4 : 'sphere_rep1', 8 : 'sphere-dome', 9 : 'dome_rep1',
+                             1 : '1k_rep2', 5 : 'sphere_rep2', 10 : 'dome_rep2'})
+adata.obs['for_ingest'] = adata.obs.experimental_label
+adata.obs['refquery'] = \
+    adata.obs.batch.replace({0 : 'ref', 1 : 'ref', 2 : 'ref', 4 : 'ref', 9 : 'ref',
+                             5 : 'query', 8 : 'query', 10 : 'query'})
+sc.pl.umap(adata, color='experimental_label' , legend_loc='on data')
+sc.pl.umap(adata, color='plate' , legend_loc='on data')
+```
+
+## PCA
+
+```{python}
+sc.tl.pca(adata)
+sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
+```
+
+## Perform BBKNN
+
+```{python}
+sc.external.pp.bbknn(adata, batch_key='refquery', use_rep = "lsi2" ,n_pcs=40)
+sc.tl.umap(adata)
+sc.tl.leiden(adata, resolution = 0.25)
+```
