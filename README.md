@@ -10,7 +10,7 @@ The analysis is the downstream of Data preprocessing in paper.
 The outputs of Data preprocessing from each stage were provided and stored in this directory.
 
 ## Script
-We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Method. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary.
+We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Methods. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary.
 
 The version of packages we used can be found in `sessionInfo.md`.
 
