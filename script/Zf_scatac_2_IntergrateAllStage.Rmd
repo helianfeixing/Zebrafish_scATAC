@@ -150,14 +150,14 @@ We integrated data based on BBKNN. This step was run in Python.
 import gzip
 import numpy as np
 import pandas as pd
-import seaborn as snsNote that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+import seaborn as snsNote
 
 import matplotlib as mpl
 import bbknn as bbknn
 from collections import Counter
 import matplotlib.pyplot as plt
 import scanpy as sc
-sc.settings.verbosity = 3             # verbosity: errors (0), warnings (1), info (2), hints (3)
+sc.settings.verbosity = 3 
 sc.logging.print_header()
 sc.settings.set_figure_params(dpi=80)
 ```
@@ -195,4 +195,5 @@ sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
 sc.external.pp.bbknn(adata, batch_key='refquery', use_rep = "lsi2" ,n_pcs=40)
 sc.tl.umap(adata)
 sc.tl.leiden(adata, resolution = 0.25)
+sc.pl.umap(adata, color = ['experimental_label', 'refquery', 'leiden'], wspace=0.4, cmap='Set3', save='lsi_40.pdf')
 ```
