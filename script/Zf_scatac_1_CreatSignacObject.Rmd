@@ -42,21 +42,7 @@ metadata_path <- paste(mtx_dir_path , "sample_info.csv" , sep = '/')
 features <- readr::read_tsv(feature_path, col_names = F) %>% tidyr::unite(feature)
 barcodes <- readr::read_tsv(barcode_path, col_names = F) %>% tidyr::unite(barcode)
 
-i = 1
-for(i in 1:nrow(barcodes))
-{
-  s <- strsplit(barcodes$barcode , split = "_")[[i]]
-  barcodes[i,1] <- paste(s[c(-1,-2)] , collapse = "_")
-}
-
 metadata <- read.csv(file = metadata_path , header = T, row.names = 1)
-
-i = 1
-for(i in 1:nrow(metadata))
-{
-  s <- strsplit(rownames(metadata)[i] , split = "_")[[1]]
-  rownames(metadata)[i] <- paste(s[c(-1,-2)] , collapse = "_")
-}
 
 mtx <- Matrix::readMM(mtx_path) %>%
   magrittr::set_rownames(features$feature) %>%
@@ -87,16 +73,18 @@ plate <- data.frame("p1")
 i = 1
 for(i in 1:ncol(atac_1k))
 {
-  s <- strsplit(colnames(atac_1k) , split = "_")[[i]]
-  plate[i] <- paste(s[2] , "_" ,
-                    s[3] ,sep = "")
+  s <- strsplit(barcodes$barcode , split = "_")[[i]]
+  plate[i] <- paste(s[1] , "_" ,
+                    s[2] , "_" ,
+                    s[3] , sep = "")
 }
-atac_1k$plate <- factor(plate , levels = c("1k_p5","1k_p6","1k_p7","1k_p8","1k_p13","1k_p14"))
+atac_1k$plate <- factor(plate , levels = c("zf_3.0hpf_plate1_p1", "zf_3.0hpf_plate1_p2", "zf_3.0hpf_plate1_p3",
+                                           "zf_3.0hpf_plate1_p4", "zf_3.0hpf_plate1_p5", "zf_3.0hpf_plate1_p6"))
 
 # Add batch
 atac_1k$batch <- as.character(atac_1k$plate)
-atac_1k$batch[atac_1k$batch %in% c('1k_p5' , '1k_p6' , '1k_p7' , '1k_p8')] = "1k_batch1"
-atac_1k$batch[atac_1k$batch %in% c('1k_p13' , '1k_p14')] = "1k_batch2"
+atac_1k$batch[atac_1k$batch %in% c("zf_3.0hpf_plate1_p1", "zf_3.0hpf_plate1_p2", "zf_3.0hpf_plate1_p3", "zf_3.0hpf_plate1_p4")] = "1k_batch1"
+atac_1k$batch[atac_1k$batch %in% c("zf_3.0hpf_plate1_p5", "zf_3.0hpf_plate1_p6")] = "1k_batch2"
 
 # Add stage
 atac_1k$stage <- "atac_1k"
