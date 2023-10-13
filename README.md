@@ -21,7 +21,7 @@ It is worth noting that due to the high degree of code duplication during the fo
 The version of packages we used can be found in `sessionInfo.md`.
 
 # Tips
-If you want to reproduce the results faster, you can directly download the filtered matrix and matedata, and use them to create an Seurat object called `atac_merge`. It is equivalent to the `atac_merge` in the codes. Then, you can start your analysis from the `Integrate` section of `Zf_scatac_3-NMF.Rmd`.
+If you want to reproduce the results faster, you can directly download the filtered matrix and matedata, and use them to create an Seurat object called `atac_merge`. It is equivalent to the `atac_merge` in the codes. Then, you can start your analysis from the `Integrate` section of `Zf_scatac_2_IntergrateAllStage.Rmd`.
 
 # Contact
 If you have any question regarding the code, please open an issue or contact me.
