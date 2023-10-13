@@ -141,6 +141,7 @@ atac_merge$batch[atac_merge$plate %in% c("zf_4.3hpf_plate5", "zf_4.3hpf_plate6",
 Idents(atac_merge) <- factor(atac_merge$batch)
 ```
 
+
 ## Normalization and linear dimensional reduction
 
 ```
