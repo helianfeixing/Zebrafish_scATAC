@@ -14,7 +14,7 @@ We split the analysis into 7 separate sections and the codes used to reproduce c
 
 It is worth noting that due to the high degree of repeatability in the following analysis process, we did not fully present the code in order to avoid verbosity:
 
-**Zf_scatac_ 1_CreatSignacObject** :  Here we only showed the codes used to analyze the 1k stage. The analysis process of samples from other stages is consistent with 1k, so before you run `Zf_ Scatac_ 2_Before IntergrateAllStage`, please refer to the code of `Zf_Scatac_ 1_CreatSignacObject`  to create objects for other stages.
+**Zf_scatac_ 1_CreatSignacObject** :  Here we only showed the codes used to analyze the 1k stage. The analysis process of samples from other stages is consistent with 1k, so before you run `Zf_ scatac_ 2_ IntergrateAllStage`, please refer to the code of `Zf_scatac_ 1_CreatSignacObject`  to create objects for other stages.
 
 **Zf_scatac_3_NMF** : In the peak annotation section, we only showed the code for module2. When annotating other modules, simply replace 'module2' with the corresponding module.
 
