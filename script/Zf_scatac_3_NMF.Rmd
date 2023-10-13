@@ -144,7 +144,7 @@ write.table(as.data.frame(top_peaks_module2) , file = "./increase_module_2.bed" 
 write.table(as.data.frame(top_peaks_module3) , file = "./increase_module_3.bed" , quote = F , sep = "\t" , row.names = F)
 write.table(as.data.frame(top_peaks_module4) , file = "./increase_module_4.bed" , quote = F , sep = "\t" , row.names = F)
 write.table(as.data.frame(top_peaks_module6) , file = "./increase_module_6.bed" , quote = F , sep = "\t" , row.names = F)
-write.table(as.data.frame(top_peaks_module10) , file = "./increase_module_10.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module10) , file = "./decrease_module_10.bed" , quote = F , sep = "\t" , row.names = F)
 ```
 
 ## Choose random peaks from background
@@ -152,7 +152,7 @@ write.table(as.data.frame(top_peaks_module10) , file = "./increase_module_10.bed
 ```{r}
 set.seed(2022)
 random_peaks <- sample(x = rownames(atac_merge@assays$peaks@data) , size = 2000 , replace = F)
-write.table(as.data.frame(random_peaks) , file = "zbf_scATAC_v3/to_do/random_2000_peaks.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(random_peaks) , file = "./random_2000_peaks.bed" , quote = F , sep = "\t" , row.names = F)
 ```
 
 ## Annotation
@@ -173,5 +173,5 @@ top_peaks_module2_anno <- (top_peaks_module2_anno[order(top_peaks_module2_anno$r
 peakanno_module2 <- StringToGRanges(top_peaks_module2_anno$peaks)
 peakanno_module2@elementMetadata <- DataFrame(top_peaks_module2_anno[,c(3:5)])
 
-write.table(peakanno_module2 , file = "~/zbf_scATAC_v3/to_do/todo2_decrease_module_2_annotation.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(peakanno_module2 , file = "./todo2_decrease_module_2_annotation.bed" , quote = F , sep = "\t" , row.names = F)
 ```
