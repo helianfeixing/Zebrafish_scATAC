@@ -123,13 +123,6 @@ atac_dome <- CreateChromatinAssay(atac_dome.counts , fragments = frags.dome) %>%
 ```{r}
 atac_merge <- merge(x = atac_1k , y = list(atac_high , atac_oblong_sphere , atac_sphere_dome , atac_dome))
 Annotation(atac_merge) <- annotation.zbf
-atac_merge <- RunTFIDF(atac_merge)
-atac_merge <- FindTopFeatures(atac_merge, min.cutoff = 'q0')
-atac_merge <- RunSVD(atac_merge)
-
-atac_merge <- RunUMAP(object = atac_merge, reduction = 'lsi', dims = 2:30)
-atac_merge <- FindNeighbors(object = atac_merge, reduction = 'lsi', dims = 2:30)
-atac_merge <- FindClusters(object = atac_merge, verbose = FALSE, algorithm = 3)
 ```
 
 ## Add batch
@@ -146,6 +139,18 @@ atac_merge$batch[atac_merge$plate %in% c("zf_4.3hpf_plate1", "zf_4.3hpf_plate2",
 atac_merge$batch[atac_merge$plate %in% c("zf_4.3hpf_plate5", "zf_4.3hpf_plate6", "zf_4.3hpf_plate7", "zf_4.3hpf_plate8")] <- "zf_4.3hpf_batch2"
 
 Idents(atac_merge) <- factor(atac_merge$batch)
+```
+
+## Normalization and linear dimensional reduction
+
+```
+atac_merge <- RunTFIDF(atac_merge)
+atac_merge <- FindTopFeatures(atac_merge, min.cutoff = 'q0')
+atac_merge <- RunSVD(atac_merge)
+
+atac_merge <- RunUMAP(object = atac_merge, reduction = 'lsi', dims = 2:30)
+atac_merge <- FindNeighbors(object = atac_merge, reduction = 'lsi', dims = 2:30)
+atac_merge <- FindClusters(object = atac_merge, verbose = FALSE, algorithm = 3)
 ```
 
 ## Save object
