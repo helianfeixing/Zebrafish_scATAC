@@ -22,26 +22,26 @@ Use MAC2.
 
 ## Create new matrix and object for sphere_dome and dome.
 ```{r}
-epi1_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/epi1_peaks_formatted.bed")
-epi2_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/epi2_peaks_formatted.bed")
-evl_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/evl_peaks_formatted.bed")
-ysl_new_peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/ysl_peaks_formatted.bed")
+del1_new_peaks <- read.table(file = "./del1_peaks_formatted.bed")
+del2_new_peaks <- read.table(file = "./del2_peaks_formatted.bed")
+evl_new_peaks <- read.table(file = "./evl_peaks_formatted.bed")
+ysl_new_peaks <- read.table(file = "./ysl_peaks_formatted.bed")
 
-epi1_new_peaks <- StringToGRanges(epi1_new_peaks$V4)
-epi2_new_peaks <- StringToGRanges(epi2_new_peaks$V4)
+del1_new_peaks <- StringToGRanges(del1_new_peaks$V4)
+del2_new_peaks <- StringToGRanges(del2_new_peaks$V4)
 evl_new_peaks <- StringToGRanges(evl_new_peaks$V4)
 ysl_new_peaks <- StringToGRanges(ysl_new_peaks$V4)
 
-bl.peaks <- read.table(file = "~/zbf_scATAC_v3/new_peaks_spdome/aggregated_scATAC_peaks_formatted.bed")
+bl.peaks <- read.table(file = "~./aggregated_scATAC_peaks_formatted.bed")
 
 bl.peaks <- StringToGRanges(bl.peaks$V4)
 
-gr.epi1_qc <- epi1_new_peaks[is.na(findOverlaps(epi1_new_peaks, bl.peaks, select="arbitrary"))]
-gr.epi2_qc <- epi2_new_peaks[is.na(findOverlaps(epi2_new_peaks, bl.peaks, select="arbitrary"))]
+gr.epi1_qc <- del1_new_peaks[is.na(findOverlaps(del1_new_peaks, bl.peaks, select="arbitrary"))]
+gr.epi2_qc <- del2_new_peaks[is.na(findOverlaps(del2_new_peaks, bl.peaks, select="arbitrary"))]
 gr.evl_qc <- evl_new_peaks[is.na(findOverlaps(evl_new_peaks, bl.peaks, select="arbitrary"))]
 gr.ysl_qc <- ysl_new_peaks[is.na(findOverlaps(ysl_new_peaks, bl.peaks, select="arbitrary"))]
 
-combine.peaks <- reduce(x = c(gr.epi1_qc , gr.epi2_qc , gr.evl_qc , gr.ysl_qc))
+combine.peaks <- reduce(x = c(gr.del1_qc , gr.del2_qc , gr.evl_qc , gr.ysl_qc))
 
 frag.spdome <- Fragments(integrated_spdome)
 
