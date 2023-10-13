@@ -12,11 +12,11 @@ The outputs of Data preprocessing from each stage were provided and stored in th
 ## Script
 We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Methods. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary.
 
-It is worth noting that due to the high degree of repeatability in the following analysis process, we did not fully present the code in order to avoid verbosity:
+It is worth noting that due to the high degree of code duplication during the following analysis process, in order to avoid verbosity, we did not fully present the code:
 
-**Zf_scatac_ 1_CreatSignacObject** :  Here we only showed the codes used to analyze the 1k stage. The analysis process of samples from other stages is consistent with 1k, so before you run `Zf_ scatac_ 2_ IntergrateAllStage`, please refer to the code of `Zf_scatac_ 1_CreatSignacObject`  to create objects for other stages.
+**Creat Signac Object** :  We only showed the codes used to create object for data from **3.0 hpf** in `Zf_scatac_ 1_CreatSignacObject.Rmd`. The process to create object for data from other stages is consistent with it, so before run `Zf_ scatac_ 2_ IntergrateAllStage.Rmd`, please refer to the codes of `Zf_scatac_ 1_CreatSignacObject.Rmd` to create objects for other stages.
 
-**Zf_scatac_3_NMF** : In the peak annotation section, we only showed the code for module2. When annotating other modules, simply replace 'module2' with the corresponding module.
+**Peaks Annotation** : In the peak annotation section of `Zf_scatac_3_NMF.Rmd`, we only showed the codes for module2. When annotating other modules, simply replace 'module2' with the corresponding module.
 
 The version of packages we used can be found in `sessionInfo.md`.
 
