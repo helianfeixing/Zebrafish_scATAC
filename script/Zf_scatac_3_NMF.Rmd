@@ -34,7 +34,7 @@ from multiprocessing import Pool
 ## Perform NMF
 
 ```{python}
-adata = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/RDS/atac_merge.h5ad")
+adata = sc.read_h5ad("./atac_merge.h5ad")
 x = adata.X.todense()
 model = NMF(n_components = 25 , init="nndsvdar" , random_state=0 , max_iter=5000)
 W = model.fit_transform(x)
@@ -44,8 +44,8 @@ H = model.components_
 ## Save matrices
 
 ```{python}
-np.savetxt("/home/zhangyl/zbf_scATAC_v3/RDS/W_atac_merge.txt" , W , delimiter=",")
-np.savetxt("/home/zhangyl/zbf_scATAC_v3/RDS/H_atac_merge.txt" , H , delimiter=",")
+np.savetxt("./W_atac_merge.txt" , W , delimiter=",")
+np.savetxt("./H_atac_merge.txt" , H , delimiter=",")
 ```
 
 # Create seurat redution object in R
@@ -77,8 +77,8 @@ library(SeuratDisk)
 ## Read matrix
 
 ```{r}
-W_merge <- fread(file = "~/zbf_scATAC_v3/RDS/W_atac_merge.txt" ,header = F)
-H_merge <- fread(file = "~/zbf_scATAC_v3/RDS/H_atac_merge.txt" ,header = F)
+W_merge <- fread(file = "./W_atac_merge.txt" ,header = F)
+H_merge <- fread(file = "./H_atac_merge.txt" ,header = F)
 
 W_merge <- as.data.frame(W_merge)
 rownames(W_merge) <- rownames(atac_merge@meta.data)
@@ -102,7 +102,7 @@ atac_merge_nmf_reduction <- CreateDimReducObject(embeddings = as.matrix(W_merge)
 ## Save object
 
 ```{r}
-atac_merge <- readRDS(file = "~/zbf_scATAC_n/atac_merge.RDS")
+atac_merge <- readRDS(file = "./atac_merge.RDS")
 atac_merge@reductions$NMF <- atac_merge_nmf_reduction
 ```
 
@@ -140,11 +140,11 @@ top_peaks_module4 <- head(rownames(H_merge)[order(H_merge$module4 , decreasing =
 top_peaks_module6 <- head(rownames(H_merge)[order(H_merge$module6 , decreasing = T)] , n = 2000)
 top_peaks_module10 <- head(rownames(H_merge)[order(H_merge$module10 , decreasing = T)] , n = 2000)
 
-write.table(as.data.frame(top_peaks_module2) , file = "zbf_scATAC_v3/to_do/increase_module_2.bed" , quote = F , sep = "\t" , row.names = F)
-write.table(as.data.frame(top_peaks_module3) , file = "zbf_scATAC_v3/to_do/increase_module_3.bed" , quote = F , sep = "\t" , row.names = F)
-write.table(as.data.frame(top_peaks_module4) , file = "zbf_scATAC_v3/to_do/increase_module_4.bed" , quote = F , sep = "\t" , row.names = F)
-write.table(as.data.frame(top_peaks_module6) , file = "zbf_scATAC_v3/to_do/increase_module_6.bed" , quote = F , sep = "\t" , row.names = F)
-write.table(as.data.frame(top_peaks_module10) , file = "zbf_scATAC_v3/to_do/increase_module_10.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module2) , file = "./increase_module_2.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module3) , file = "./increase_module_3.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module4) , file = "./increase_module_4.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module6) , file = "./increase_module_6.bed" , quote = F , sep = "\t" , row.names = F)
+write.table(as.data.frame(top_peaks_module10) , file = "./increase_module_10.bed" , quote = F , sep = "\t" , row.names = F)
 ```
 
 ## Choose random peaks from background
