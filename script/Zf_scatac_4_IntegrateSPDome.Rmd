@@ -47,7 +47,7 @@ integrated_spdome$type[integrated_spdome$seurat_clusters == "6"] <- "EVL"
 integrated_spdome$type[integrated_spdome$seurat_clusters == "8"] <- "DEL2"
 integrated_spdome$type[integrated_spdome$seurat_clusters == "10"] <- "YSL"
 DimPlot(integrated_spdome , group.by = "type" , label = T)
-Idents(integrated_spdome) <- factor(integrated_spdome$type , levels = c("DEL1" , "DEL2" , "EVL" , "E-YSL"))
+Idents(integrated_spdome) <- factor(integrated_spdome$type , levels = c("DEL1" , "DEL2" , "EVL" , "YSL"))
 ```
 
 ## Find differentail accessible peaks
@@ -86,7 +86,7 @@ markers_spdome_evl$peaks <- rownames(markers_spdome_evl)
 ad <- as.data.frame(peakanno_evl@elementMetadata)[,c(1,11,13,14)]
 markers_spdome_evl_anno <- merge(x = markers_spdome_evl , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
 markers_spdome_evl_anno <- markers_spdome_evl_anno[,c(7,2:6,8:10)]
-write.table(markers_spdome_evl_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_evl.csv")
+write.table(markers_spdome_evl_anno , quote = F , sep = "," , row.names = F , file = "./markerpeak_evl.csv")
 
 #### anno_DEL1
 peakanno_DEL1 <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_DEL1)) , annoData = annotation.zbf , select = "bestOne" , 
@@ -98,7 +98,7 @@ markers_spdome_DEL1$peaks <- rownames(markers_spdome_DEL1)
 ad <- as.data.frame(peakanno_DEL1@annotationelementMetadata)[,c(1,11,13,14)]
 markers_spdome_DEL1_anno <- merge(x = markers_spdome_DEL1 , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
 markers_spdome_DEL1_anno <- markers_spdome_DEL1_anno[,c(7,2:6,8:10)]
-write.table(markers_spdome_DEL1_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_DEL1.csv")
+write.table(markers_spdome_DEL1_anno , quote = F , sep = "," , row.names = F , file = "./markerpeak_DEL1.csv")
 
 #### anno_DEL2
 peakanno_DEL2 <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_DEL2)) , annoData = annotation.zbf , select = "bestOne" , 
@@ -110,7 +110,7 @@ markers_spdome_DEL2$peaks <- rownames(markers_spdome_DEL2)
 ad <- as.data.frame(peakanno_DEL2@elementMetadata)[,c(1,11,13,14)]
 markers_spdome_DEL2_anno <- merge(x = markers_spdome_DEL2 , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
 markers_spdome_DEL2_anno <- markers_spdome_DEL2_anno[,c(7,2:6,8:10)]
-write.table(markers_spdome_DEL2_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_DEL2.csv")
+write.table(markers_spdome_DEL2_anno , quote = F , sep = "," , row.names = F , file = "./markerpeak_DEL2.csv")
 
 #### anno_ysl
 peakanno_ysl <- annoPeaks(peaks = StringToGRanges(rownames(markers_spdome_ysl)) , annoData = annotation.zbf , select = "bestOne" , 
@@ -122,5 +122,5 @@ markers_spdome_ysl$peaks <- rownames(markers_spdome_ysl)
 ad <- as.data.frame(peakanno_ysl@elementMetadata)[,c(1,11,13,14)]
 markers_spdome_ysl_anno <- merge(x = markers_spdome_ysl , y = ad , by = "peak" , all.x = T , all.y = F , sort = F)
 markers_spdome_ysl_anno <- markers_spdome_ysl_anno[,c(7,2:6,8:10)]
-write.table(markers_spdome_ysl_anno , quote = F , sep = "," , row.names = F , file = "~/zbf_scATAC_v3/to_do/todo5_markerpeak_ysl.csv")
+write.table(markers_spdome_ysl_anno , quote = F , sep = "," , row.names = F , file = "./markerpeak_ysl.csv")
 ```
