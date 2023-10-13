@@ -171,15 +171,10 @@ adata = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/RDS/atac_merge.h5ad")
 ## Add ref/query label
 
 ```{python}
-adata.obs['experimental_label'] = \
-    adata.obs.batch.replace({0 : '1k_rep1', 2 : 'high', 4 : 'sphere_rep1', 8 : 'sphere-dome', 9 : 'dome_rep1',
-                             1 : '1k_rep2', 5 : 'sphere_rep2', 10 : 'dome_rep2'})
-adata.obs['for_ingest'] = adata.obs.experimental_label
 adata.obs['refquery'] = \
-    adata.obs.batch.replace({0 : 'ref', 1 : 'ref', 2 : 'ref', 4 : 'ref', 9 : 'ref',
-                             5 : 'query', 8 : 'query', 10 : 'query'})
-sc.pl.umap(adata, color='experimental_label' , legend_loc='on data')
-sc.pl.umap(adata, color='plate' , legend_loc='on data')
+    adata.obs.batch.replace({'zf_3.0hpf_batch1' : 'ref', 'zf_3.3hpf_batch1' : 'ref', 'zf_3.7hpf_batch1' : 'ref', 'zf_4.1hpf_batch1' : 'ref', 'zf_4.3hpf_batch1' : 'ref',
+                             'zf_3.0hpf_batch2' : 'query', 'zf_3.7hpf_batch2' : 'query', 'zf_4.3hpf_batch2' : 'query'})
+sc.pl.umap(adata, color='batch' , legend_loc='on data')
 ```
 
 ## PCA
@@ -195,5 +190,5 @@ sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
 sc.external.pp.bbknn(adata, batch_key='refquery', use_rep = "lsi2" ,n_pcs=40)
 sc.tl.umap(adata)
 sc.tl.leiden(adata, resolution = 0.25)
-sc.pl.umap(adata, color = ['experimental_label', 'refquery', 'leiden'], wspace=0.4, cmap='Set3', save='lsi_40.pdf')
+sc.pl.umap(adata, color = ['batch', 'refquery', 'leiden'], wspace=0.4, cmap='Set3', save='lsi_40.pdf')
 ```
