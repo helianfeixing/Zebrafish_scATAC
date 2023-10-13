@@ -33,7 +33,7 @@ from multiprocessing import Pool
 ## Load h5ad
 
 ```{python}
-atac_spdome = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/atac_spdome_new.h5ad")
+atac_spdome = sc.read_h5ad("./atac_spdome_new.h5ad")
 ```
 
 ## Run diffmap
@@ -70,10 +70,10 @@ sc.pl.embedding(atac_spdome,'diffmap_',color=['dpt_pseudotime','type', 'batch'] 
 ## Save the cell embedding of trajectory and pseudotime value
 
 ```{python}
-np.savetxt("/home/zhangyl/zbf_scATAC_v3/diffmap_spdome_2.txt" , atac_spdome.obsm['X_diffmap_'] , 
+np.savetxt("./diffmap_spdome_2.txt" , atac_spdome.obsm['X_diffmap_'] , 
            delimiter = '\t' , comments="")
 
-np.savetxt("/home/zhangyl/zbf_scATAC_v3/dpt_pseudometime_spdome_2.txt" , atac_spdome.obs.dpt_pseudotime , 
+np.savetxt("./dpt_pseudometime_spdome_2.txt" , atac_spdome.obs.dpt_pseudotime , 
            delimiter = '\t' , comments="")
 ```
 
@@ -124,7 +124,7 @@ markers_spdome_epi1_new$peaks <- rownames(markers_spdome_epi1_new)
 ## Add pseudotime value to meta.data
 
 ```{r}
-dpt_pseudotime <- read.table(file = "/home/zhangyl/zbf_scATAC_v3/dpt_pseudometime_spdome_2.txt" , quote = F , sep = "\t")
+dpt_pseudotime <- read.table(file = "./dpt_pseudometime_spdome_2.txt" , quote = F , sep = "\t")
 atac_spdome_new$dpt_pseudotime <- dpt_pseudotime$V1
 ```
 
