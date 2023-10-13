@@ -12,7 +12,7 @@ The outputs of Data preprocessing from each stage were provided and stored in th
 ## Script
 We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Methods. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary.
 
-It is worth noting that due to the high degree of repeatability in the following analysis process, we did not fully present the code in order to simplify the space:
+It is worth noting that due to the high degree of repeatability in the following analysis process, we did not fully present the code in order to avoid verbosity:
 
 **Zf_Scatac_ 1_CreatSignacObject** :  Here we only showed the code used to analyze the 1k stage. The analysis process of samples from other stages is consistent with 1k, so before you run `Zf_ Scatac_ 2_Before IntergrateAllStage`, please refer to the code of `Zf_Scatac_ 1_CreatSignacObject`  to create objects for other stages.
 
