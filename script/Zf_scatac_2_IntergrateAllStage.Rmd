@@ -35,8 +35,8 @@ library(SeuratDisk)
 ```{r}
 gr.1k <- granges(atac_1k)
 gr.high <- granges(atac_high)
-gr.oblong <- granges(atac_oblong)
-gr.sphere <- granges(atac_sphere)
+gr.oblong_sphere <- granges(atac_oblong_sphere)
+gr.sphere_dome <- granges(atac_sphere_dome)
 gr.dome <- granges(atac_dome)
 ```
 
@@ -47,11 +47,11 @@ The blacklist was generated from a prior dataset of ATAC-seq data obtained from 
 ```{r}
 gr.1k_qc <- gr.1k[is.na(findOverlaps(gr.1k, bl.peaks, select="arbitrary"))]
 gr.high_qc <- gr.high[is.na(findOverlaps(gr.high, bl.peaks, select="arbitrary"))]
-gr.oblong_qc <- gr.oblong[is.na(findOverlaps(gr.oblong, bl.peaks, select="arbitrary"))]
-gr.sphere_qc <- gr.sphere[is.na(findOverlaps(gr.sphere, bl.peaks, select="arbitrary"))]
+gr.oblong_sphere_qc <- gr.oblong_sphere[is.na(findOverlaps(gr.oblong_sphere, bl.peaks, select="arbitrary"))]
+gr.sphere_dome_qc <- gr.sphere_dome[is.na(findOverlaps(gr.sphere_dome, bl.peaks, select="arbitrary"))]
 gr.dome_qc <- gr.dome[is.na(findOverlaps(gr.dome, bl.peaks, select="arbitrary"))]
 
-combine.peaks <- reduce(x = c(gr.1k_qc , gr.high_qc , gr.oblong_qc, gr.sphere_qc, gr.dome_qc))
+combine.peaks <- reduce(x = c(gr.1k_qc , gr.high_qc , gr.oblong_sphere_qc, gr.sphere_dome_qc, gr.dome_qc))
 peakwidths <-width(combine.peaks)
 
 range(peakwidths)
@@ -60,15 +60,15 @@ range(peakwidths)
 ## Create fragment objects
 
 ```{r}
-frags.1k <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/1k/aggregate_fragments.tsv.gz" , 
+frags.1k <- CreateFragmentObject(path = "1k/aggregate_fragments.tsv.gz" , 
                                  cells = rownames(atac_1k@meta.data))
-frags.high <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/high/aggregate_fragments.tsv.gz" , 
+frags.high <- CreateFragmentObject(path = "high/aggregate_fragments.tsv.gz" , 
                                    cells = rownames(atac_high@meta.data))
-frags.oblong <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/oblong/aggregate_fragments.tsv.gz" , 
-                                     cells = rownames(atac_oblong@meta.data))
-frags.sphere <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/sphere/aggregate_fragments.tsv.gz" , 
-                                     cells = rownames(atac_sphere@meta.data))
-frags.dome <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/dome/aggregate_fragments.tsv.gz" , 
+frags.oblong_sphere <- CreateFragmentObject(path = "oblong_sphere/aggregate_fragments.tsv.gz" , 
+                                     cells = rownames(atac_oblong_sphere@meta.data))
+frags.sphere_dome <- CreateFragmentObject(path = "sphere_dome/aggregate_fragments.tsv.gz" , 
+                                     cells = rownames(atac_sphere_dome@meta.data))
+frags.dome <- CreateFragmentObject(path = "dome/aggregate_fragments.tsv.gz" , 
                                    cells = rownames(atac_dome@meta.data))
 ```
 
@@ -77,8 +77,8 @@ frags.dome <- CreateFragmentObject(path = "~/zbf_scATAC_mtx_2/dome/aggregate_fra
 ```{r}
 md.1k <- atac_1k@meta.data
 md.high <- atac_high@meta.data
-md.oblong <- atac_oblong@meta.data
-md.sphere <- atac_sphere@meta.data
+md.oblong_sphere <- atac_oblong_sphere@meta.data
+md.sphere_dome <- atac_sphere_dome@meta.data
 md.dome <- atac_dome@meta.data
 ```
 
@@ -95,15 +95,15 @@ atac_high.counts <- FeatureMatrix(
   features = combine.peaks , 
   cells = rownames(md.high)
 )
-atac_oblong.counts <- FeatureMatrix(
-  fragments = frags.oblong , 
+atac_oblong_sphere.counts <- FeatureMatrix(
+  fragments = frags.oblong_sphere , 
   features = combine.peaks , 
-  cells = rownames(md.oblong)
+  cells = rownames(md.oblong_sphere)
 )
-atac_sphere.counts <- FeatureMatrix(
-  fragments = frags.sphere , 
+atac_sphere_dome.counts <- FeatureMatrix(
+  fragments = frags.sphere_dome , 
   features = combine.peaks , 
-  cells = rownames(md.sphere)
+  cells = rownames(md.sphere_dome)
 )
 atac_dome.counts <- FeatureMatrix(
   fragments = frags.dome , 
@@ -113,23 +113,45 @@ atac_dome.counts <- FeatureMatrix(
 
 atac_1k <- CreateChromatinAssay(atac1k.counts , fragments = frags.1k) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.1k)
 atac_high <- CreateChromatinAssay(atac_high.counts , fragments = frags.high) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.high)
-atac_oblong <- CreateChromatinAssay(atac_oblong.counts , fragments = frags.oblong) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.oblong)
-atac_sphere <- CreateChromatinAssay(atac_sphere.counts , fragments = frags.sphere) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.sphere)
+atac_oblong_sphere <- CreateChromatinAssay(atac_oblong_sphere.counts , fragments = frags.oblong_sphere) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.oblong_sphere)
+atac_sphere_dome <- CreateChromatinAssay(atac_sphere_dome.counts , fragments = frags.sphere_dome) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.sphere_dome)
 atac_dome <- CreateChromatinAssay(atac_dome.counts , fragments = frags.dome) %>% CreateSeuratObject(assay = "peaks" , meta.data = md.dome)
 ```
 
 ## Merge objects
 
 ```{r}
-atac_merge <- merge(x = atac_1k , y = list(atac_high , atac_oblong , atac_sphere , atac_dome))
+atac_merge <- merge(x = atac_1k , y = list(atac_high , atac_oblong_sphere , atac_sphere_dome , atac_dome))
 Annotation(atac_merge) <- annotation.zbf
+atac_merge <- RunTFIDF(atac_merge)
+atac_merge <- FindTopFeatures(atac_merge, min.cutoff = 'q0')
+atac_merge <- RunSVD(atac_merge)
+
+atac_merge <- RunUMAP(object = atac_merge, reduction = 'lsi', dims = 2:30)
+atac_merge <- FindNeighbors(object = atac_merge, reduction = 'lsi', dims = 2:30)
+atac_merge <- FindClusters(object = atac_merge, verbose = FALSE, algorithm = 3)
+```
+
+## Add batch
+
+```{r}
+atac_merge$batch <- atac_merge$plate
+atac_merge$batch[atac_merge$plate %in% c("zf_3.0hpf_plate1", "zf_3.0hpf_plate2", "zf_3.0hpf_plate3", "zf_3.0hpf_plate4")] <- "zf_3.0hpf_batch1"
+atac_merge$batch[atac_merge$plate %in% c("zf_3.0hpf_plate5", "zf_3.0hpf_plate6")] <- "zf_3.0hpf_batch2"
+atac_merge$batch[atac_merge$plate %in% c("zf_3.3hpf_plate1", "zf_3.3hpf_plate2", "zf_3.3hpf_plate3", "zf_3.3hpf_plate4")] <- "zf_3.3hpf_batch1"
+atac_merge$batch[atac_merge$plate %in% c("zf_3.7hpf_plate1", "zf_3.7hpf_plate2", "zf_3.7hpf_plate3", "zf_3.7hpf_plate4")] <- "zf_3.7hpf_batch1"
+atac_merge$batch[atac_merge$plate %in% c("zf_3.7hpf_plate5", "zf_3.7hpf_plate6", "zf_3.7hpf_plate7", "zf_3.7hpf_plate8")] <- "zf_3.7hpf_batch2"
+atac_merge$batch[atac_merge$plate %in% c("zf_4.1hpf_plate1", "zf_4.1hpf_plate2", "zf_4.1hpf_plate3", "zf_4.1hpf_plate4")] <- "zf_4.1hpf_batch1"
+atac_merge$batch[atac_merge$plate %in% c("zf_4.3hpf_plate1", "zf_4.3hpf_plate2", "zf_4.3hpf_plate3", "zf_4.3hpf_plate4")] <- "zf_4.3hpf_batch1"
+atac_merge$batch[atac_merge$plate %in% c("zf_4.3hpf_plate5", "zf_4.3hpf_plate6", "zf_4.3hpf_plate7", "zf_4.3hpf_plate8")] <- "zf_4.3hpf_batch2"
+
 Idents(atac_merge) <- factor(atac_merge$batch)
 ```
 
 ## Save object
 
 ```{r}
-saveRDS(object = atac_merge , file = "~/zbf_scATAC_n/atac_merge.RDS")
+saveRDS(object = atac_merge , file = "atac_merge.RDS")
 ```
 
 ## Convert object to h5ad
@@ -165,7 +187,7 @@ sc.settings.set_figure_params(dpi=80)
 ## Load data
 
 ```{python}
-adata = sc.read_h5ad("/home/zhangyl/zbf_scATAC_v3/RDS/atac_merge.h5ad")
+adata = sc.read_h5ad("atac_merge.h5ad")
 ```
 
 ## Add ref/query label
