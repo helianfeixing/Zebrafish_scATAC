@@ -46,7 +46,7 @@ sc.tl.diffmap(atac_spdome)
 ## Choose root and conculate pseudotime value
 
 ```{python}
-Tn_mask = np.isin(atac_spdome.obs['type'], ['Epi1'])
+Tn_mask = np.isin(atac_spdome.obs['type'], ['DEL1'])
 min_stem_id = np.argmin(atac_spdome.obsm['X_diffmap'][Tn_mask, 1])
 root_id = np.arange(len(Tn_mask))[Tn_mask][min_stem_id]
 atac_spdome.uns['iroot'] = root_id
@@ -70,10 +70,10 @@ sc.pl.embedding(atac_spdome,'diffmap_',color=['dpt_pseudotime','type', 'batch'] 
 ## Save the cell embedding of trajectory and pseudotime value
 
 ```{python}
-np.savetxt("./diffmap_spdome_2.txt" , atac_spdome.obsm['X_diffmap_'] , 
+np.savetxt("./diffmap_spdome.txt" , atac_spdome.obsm['X_diffmap_'] , 
            delimiter = '\t' , comments="")
 
-np.savetxt("./dpt_pseudometime_spdome_2.txt" , atac_spdome.obs.dpt_pseudotime , 
+np.savetxt("./dpt_pseudometime_spdome.txt" , atac_spdome.obs.dpt_pseudotime , 
            delimiter = '\t' , comments="")
 ```
 
@@ -117,8 +117,8 @@ markers_spdome_ysl_new <- FindMarkers(object = atac_spdome_new,
 
 markers_spdome_evl_new$peaks <- rownames(markers_spdome_evl_new)
 markers_spdome_ysl_new$peaks <- rownames(markers_spdome_ysl_new)
-markers_spdome_epi2_new$peaks <- rownames(markers_spdome_epi2_new)
-markers_spdome_epi1_new$peaks <- rownames(markers_spdome_epi1_new)
+markers_spdome_DEL2_new$peaks <- rownames(markers_spdome_DEL2_new)
+markers_spdome_DEL1_new$peaks <- rownames(markers_spdome_DEL1_new)
 ```
 
 ## Add pseudotime value to meta.data
@@ -136,8 +136,8 @@ cells_traj_evl <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.dat
                     rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "EVL"])
 cells_traj_ysl <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
                     rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "E-YSL"])
-cells_traj_epi <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
-                    rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "Epi2"])
+cells_traj_del <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$dpt_pseudotime < 0.19] , 
+                    rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.data$type == "DEL2"])
 ```
 
 ## Choose top 1000 differential accessibility peaks of each type to fit
@@ -145,9 +145,9 @@ cells_traj_epi <- c(rownames(atac_spdome_new@meta.data)[atac_spdome_new@meta.dat
 ```{r}
 features_evl <- head(markers_spdome_evl_new$peaks , n = 1000)
 features_ysl <- head(markers_spdome_ysl_new$peaks , n = 1000)
-features_epi <- head(markers_spdome_epi2_new$peaks , n = 1000)
+features_del <- head(markers_spdome_epi2_new$peaks , n = 1000)
 
-features <- data.frame("peaks" = c(features_evl , features_ysl , features_epi) , "type" = rep(c("EVL" , "YSL" , "DEL2") , each = 1000))
+features <- data.frame("peaks" = c(features_evl , features_ysl , features_del) , "type" = rep(c("EVL" , "YSL" , "DEL2") , each = 1000))
 features <- features[duplicated(features$peaks) == 0,]
 ```
 
@@ -187,8 +187,8 @@ h <- function(object , cells = colnames(object@assays[[assay]]@data) ,
 ```{r}
 dd_evl <- h(object = atac_spdome_new , cells = cells_traj_evl , features = features$peaks , assay = "peaks")
 dd_ysl <- h(object = atac_spdome_new , cells = cells_traj_ysl , features = features$peaks , assay = "peaks")
-dd_epi <- h(object = atac_spdome_new , cells = cells_traj_epi , features = features$peaks , assay = "peaks")
-dd <- cbind(dd_evl , dd_ysl , dd_epi)
+dd_del <- h(object = atac_spdome_new , cells = cells_traj_del , features = features$peaks , assay = "peaks")
+dd <- cbind(dd_evl , dd_ysl , dd_del)
 dd[dd > 6] = 6
 ```
 
