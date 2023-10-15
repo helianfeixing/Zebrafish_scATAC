@@ -10,7 +10,7 @@ The analysis is the downstream of Data preprocessing in paper.
 Meta data after data preprocess and filter was saved in `metadata.csv`, including batches and cell types.
 
 ## Script
-We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Methods. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary. If you download the final matrix after data filter
+We split the analysis into 7 separate sections and the codes used to reproduce can be found in corresponding R markdown. Files were sorted and numbered in the order described in Methods. To ensure that you would not troubled by 'object not found', we recommend running the code in order, although it is not necessary. 
 
 It is worth noting that due to the high degree of code duplication during the following analysis process, in order to avoid verbosity, we did not fully present the code:
 
