@@ -215,7 +215,7 @@ sc.pl.pca_variance_ratio(adata, log=True, n_pcs=50)
 ## Perform BBKNN
 
 ```{python}
-sc.external.pp.bbknn(adata, batch_key='refquery', use_rep = "lsi2" ,n_pcs=40)
+sc.external.pp.bbknn(adata, batch_key='refquery', use_rep = "X_lsi" ,n_pcs=40)
 sc.tl.umap(adata)
 sc.tl.leiden(adata, resolution = 0.25)
 sc.pl.umap(adata, color = ['batch', 'refquery', 'leiden'], wspace=0.4, cmap='Set3', save='lsi_40.pdf')
